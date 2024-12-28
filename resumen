@@ -1,0 +1,133 @@
+### **Resumen Organizado y Detallado de Todo el Proceso**
+
+A continuación, se presenta un resumen estructurado de los pasos realizados para configurar y solucionar los problemas en tu aplicación Ruby on Rails con PostgreSQL en **Codespaces**.
+
+---
+
+### **1. Configuración Inicial**
+#### Configuración de PostgreSQL:
+- **Instalación y configuración en Codespaces**:
+  - Verificamos que el servicio PostgreSQL estuviera instalado y en ejecución.
+  - Configuramos el archivo `pg_hba.conf` para usar el método de autenticación `trust` y permitir conexiones locales sin contraseña.
+  - Reiniciamos PostgreSQL para aplicar los cambios:
+    ```bash
+    sudo service postgresql restart
+    ```
+
+#### Configuración del archivo `database.yml`:
+- Configuramos el archivo `config/database.yml` para que Rails se conecte a PostgreSQL utilizando `localhost` y el usuario `postgres`.
+
+#### Creación de la base de datos:
+- Ejecutamos:
+  ```bash
+  rails db:create
+  ```
+
+---
+
+### **2. Creación de Modelos y Migraciones**
+#### Modelos y Tablas:
+- Creamos los modelos principales con migraciones asociadas:
+  ```bash
+  rails generate model Usuario nombre:string email:string password:string tipo_usuario:string carrera:string telefono:string fecha_registro:datetime
+  rails generate model Proyecto nombre:string descripcion:text estado:string fecha_inicio:datetime fecha_fin:datetime lider:references
+  rails generate model Equipo proyecto:references fecha_creacion:datetime
+  rails generate model MiembroEquipo equipo:references usuario:references rol:string fecha_union:datetime
+  rails generate model Mentoria proyecto:references mentor:references fecha:datetime duracion:integer notas:text estado:string
+  rails generate model Evento nombre:string descripcion:text fecha:datetime tipo:string lugar:string organizador:references
+  rails generate model ParticipanteEvento evento:references usuario:references fecha_registro:datetime
+  ```
+
+#### Corrección de problemas en migraciones:
+- **Referencias incorrectas**:
+  - Ajustamos las claves foráneas que intentaban referenciar tablas inexistentes, como `mentors` y `organizadors`, para que apunten a la tabla `usuarios`:
+    ```ruby
+    t.references :mentor, foreign_key: { to_table: :usuarios }
+    t.references :organizador, foreign_key: { to_table: :usuarios }
+    ```
+
+- **Errores de orden en migraciones**:
+  - Identificamos y corregimos problemas de dependencias entre tablas ejecutando las migraciones manualmente en el orden correcto.
+  - Ejecutamos la migración de `usuarios` antes que las demás:
+    ```bash
+    rails db:migrate:up VERSION=20241220011744
+    ```
+
+- **Problemas con claves foráneas**:
+  - Agregamos la opción `on_delete: :cascade` para manejar mejor las dependencias entre tablas:
+    ```ruby
+    t.references :lider, foreign_key: { to_table: :usuarios, on_delete: :cascade }
+    ```
+
+---
+
+### **3. Ejecución de Migraciones**
+- Ejecutamos las migraciones de manera secuencial, asegurándonos de que cada tabla dependiente estuviera presente antes de referenciarla:
+  ```bash
+  rails db:migrate
+  ```
+
+#### Solución a errores de migraciones:
+- Revertimos migraciones fallidas usando:
+  ```bash
+  rails db:rollback STEP=1
+  ```
+
+- Reejecutamos migraciones específicas manualmente:
+  ```bash
+  rails db:migrate:up VERSION=<timestamp>
+  ```
+
+---
+
+### **4. Verificación de la Configuración**
+- Confirmamos que las tablas fueron creadas correctamente utilizando PostgreSQL:
+  ```bash
+  psql -U postgres
+  \dt
+  ```
+
+- Generamos el esquema de la base de datos con:
+  ```bash
+  rails db:schema:dump
+  ```
+
+---
+
+### **5. Adición de Datos de Prueba**
+- Insertamos un usuario administrador como dato inicial en `db/seeds.rb`:
+  ```ruby
+  Usuario.create!(nombre: 'Admin', email: 'admin@universidad.edu', password: 'admin123', tipo_usuario: 'ADMIN')
+  ```
+
+- Ejecutamos los seeds con:
+  ```bash
+  rails db:seed
+  ```
+
+---
+
+### **6. Validación del Proyecto**
+- Verificamos que el servidor Rails se ejecutara correctamente:
+  ```bash
+  rails server
+  ```
+
+- Probamos las rutas y controladores asociados a los modelos generados.
+
+---
+
+### **7. Mejoras Futuras**
+- Agregamos `on_delete: :cascade` para evitar problemas de dependencias en futuras eliminaciones de tablas.
+- Establecimos una estructura de migraciones clara para evitar dependencias cíclicas.
+
+---
+
+### **Estado Final**
+- **Base de datos funcional**: Todas las tablas (`usuarios`, `proyectos`, `equipos`, `miembro_equipos`, `mentorias`, `eventos`, `participante_eventos`) creadas con relaciones definidas.
+- **Migraciones exitosas**: Todas las migraciones ejecutadas sin errores.
+- **Datos iniciales agregados**: Se creó un usuario administrador como ejemplo.
+
+---
+
+Si necesitas más detalles o pasos adicionales, ¡hazmelo saber! 🚀

@@ -1,0 +1,78 @@
+-- Tabla de usuarios (alumnos, mentores, administradores)
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    tipo_usuario VARCHAR(20) CHECK (tipo_usuario IN ('ADMIN', 'MENTOR', 'ALUMNO')),
+    carrera VARCHAR(100),
+    telefono VARCHAR(20),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de proyectos/startups
+CREATE TABLE proyectos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    descripcion TEXT,
+    estado VARCHAR(20) CHECK (estado IN ('POSTULADO', 'EN_INCUBACION', 'FINALIZADO')),
+    fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_fin TIMESTAMP,
+    lider_id INTEGER REFERENCES usuarios(id)
+);
+
+-- Tabla de equipos
+CREATE TABLE equipos (
+    id SERIAL PRIMARY KEY,
+    proyecto_id INTEGER REFERENCES proyectos(id),
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de miembros de equipo
+CREATE TABLE miembros_equipo (
+    id SERIAL PRIMARY KEY,
+    equipo_id INTEGER REFERENCES equipos(id),
+    usuario_id INTEGER REFERENCES usuarios(id),
+    rol VARCHAR(50) NOT NULL,
+    fecha_union TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de mentorías
+CREATE TABLE mentorias (
+    id SERIAL PRIMARY KEY,
+    proyecto_id INTEGER REFERENCES proyectos(id),
+    mentor_id INTEGER REFERENCES usuarios(id),
+    fecha TIMESTAMP NOT NULL,
+    duracion INTEGER, -- en minutos
+    notas TEXT,
+    estado VARCHAR(20) CHECK (estado IN ('PROGRAMADA', 'COMPLETADA', 'CANCELADA'))
+);
+
+-- Tabla de eventos/talleres
+CREATE TABLE eventos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    descripcion TEXT,
+    fecha TIMESTAMP NOT NULL,
+    tipo VARCHAR(50),
+    lugar VARCHAR(100),
+    organizador_id INTEGER REFERENCES usuarios(id)
+);
+
+-- Tabla de participantes en eventos
+CREATE TABLE participantes_eventos (
+    id SERIAL PRIMARY KEY,
+    evento_id INTEGER REFERENCES eventos(id),
+    usuario_id INTEGER REFERENCES usuarios(id),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índices básicos para mejorar el rendimiento
+CREATE INDEX idx_proyectos_lider ON proyectos(lider_id);
+CREATE INDEX idx_miembros_equipo_usuario ON miembros_equipo(usuario_id);
+CREATE INDEX idx_mentorias_proyecto ON mentorias(proyecto_id);
+CREATE INDEX idx_eventos_fecha ON eventos(fecha);
+
+-- Datos iniciales básicos
+INSERT INTO usuarios (nombre, email, password, tipo_usuario) 
+VALUES ('Admin', 'admin@universidad.edu', 'admin123', 'ADMIN');
